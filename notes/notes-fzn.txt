@@ -1,0 +1,124 @@
+JAN: STATIC ANALYSIS OF R  
+
+*** 13 Feb ***
+
+- Konrad: tracing for R.  Catch all side effects (strictness analyser for R, evaluation order inference.  Idea: validate the static analysis.  Take static analysis and rewrite the R bytecode to force the order of evaluation).  Use a tool for tracing written by Philip.  Challenge: hard to isolate one feature in R, analysing strictness requires building a call graphs, closures, ho…  might be useful for Suresh Safe promises too.  Recast as IFDS problem (suggested by Frank Tip)?
+
+Aviral: 
+
+- there is some static analysis done by Aviral, builds on Peta’s RIR.
+- analysis is in two phases: collect all functions, and then iteratively create the call graph.
+- what about h/o? no, super simple test-cases
+- how to validate the analysis?  language too complex, Konrad is thinking about it, via dynamic analysis.  
+  
+*** 15 Feb ***
+
+List all the problems (timeframe of 2 months, OOPSLA):
+
+- call graph construction (a basic one exists already, no h/o functions); this must run ahead of time, and can be reused for other applications.
+- what is a convincing validation?
+    - take a corpus of programs, force evaluation order & record errors (easy, as only need to force the arguments in some order, can be done by syntactic rewriting)
+    - take the inferred strictness annotations, have an instrumented interpreter that records the truth, and validate traces against inferred
+- how to show that the analysis is useful?  
+    - get speedups by not allocating all the promises in some cases?  The interpreter in some cases assume that you get promises, but the GNU R jit already breaks this.  We can at least say “how many promises we _might_ get rid of”, if we can’t do it for real.
+    - Jan argues that already evaluating if laziness is important.
+- what to do with eval and calls to C code?  build a simple model for now.
+
+Benchmarks:
+- easy to apply to 10k packages, with runnable test-cases
+- maybe restrict to the most used libraries, and test against their clients (clients can be the 10k packages above)
+
+We have a tool that intercepts all calls to a functions.
+
+TASKS:
+
+- fix a set of examples 
+    - start with the base library, but these delegate immediately to C code
+    - focus on packages that have substantial R code before calling C
+    - ideally non-trivial (evaluating all their arguments)
+    - Plan: identify these from the dynamic analysis?
+
+- construction of the call graph
+
+- static analysis
+
+- dynamic analysis
+    - GNU R, turn off the jit, use the AST interpreter
+    - instruct the interpreter to write an execution traces
+    - Tomas has ideas (check if the AST has line debug informations)
+
+Meet again on Monday 11am.
+
+*** ***
+
+GentHat (Feb 17)
+
+Generate test cases for R by observing execution traces.  Goes through the package, instruments all the functions there, and rebuilds the test from the trace.  
+
+Big question: how to serialise the arguments and results?  These can contain closures, pointers to the global name space…
+
+*** Feb 20 ****
+
+Some sample cases we are interested in:
+
+f1 <- function(x,y,z)
+	x+y+z
+
+  outcome: !x -> !y -> !z
+
+f2 <- function(x,y,z)
+	if (x) y+z
+	else z+y
+
+  outcome: !x -> !y <-> !z
+                       ————>
+
+f3 <- function(x,y,z)
+	if (x) y
+	else z
+ 
+   outcome: !x -> !y
+                        -> !z
+
+f4 <- function(x,y,z)
+	x <- 1
+	x
+
+   outcome: (empty)
+
+f5 <- function(x) {
+ 	f6 <- function(y)
+		x <<- 3
+		y
+ 	}
+	f6(x)
+}
+f5(42)
+  
+  output here depends on eager vs. lazy
+  outcome: ?
+
+Remark: all assignments are strict.
+
+f9 <- function (x, y=2x) { … }
+f10 <- function (x=1, y=2x, z=3x)
+
+exponential blowup?
+
+Idea: track both binding between variable names and promises, and the evaluation order of promises 
+
+
+- look for solution of the IFDS problem.
+- come up with a solution on our own.
+
+*** Attic ***
+
+Rdt sample call:
+
+Rdt({
+   a<-1
+  b<-1
+  x<-if(TRUE) a else b
+  force(x+1)
+})
+
