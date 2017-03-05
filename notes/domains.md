@@ -2,6 +2,17 @@
 
 The abstract domains for strictness analysis are specified below along with the basic data types and interfaces for some fundamental functions.
 
+## Observations
+
+1. Promises don't have an environment of their own. They either share the environment of the caller or the callee.
+2. All promises corresponding to the arguments of the same functions share the same graph. This is the graph of the callee.
+3. So, we have a new environment and graph for each function. Promises don't require new environments or graphs.
+4. The same environment can be paired with multiple graphs and the same graph can be paired with multiple environments.
+5. To make this work properly, we need a level of indirection for pairing environments and graphs.
+6. A promise can be evaluated only once. Multiple evaluations can make the analysis imprecise. Hence, we need to store information about the state of promise evaluation.
+7. To update the graph, we need to know if the code being evaluated is that of function or promise. If a promise is being evaluated, we need to update that fact in the graph of the corresponding function but if a function is being evaluated, we don't have to update that fact in any graph. So, we need a mapping to distinguish between promise and function labels. 
+8. The analysis is really expected to compute whether a function is strict in a particular argument position or not. So, we need to map each promise to its argument position.
+
 ## Overview
 
 ### Syntactic Categories
