@@ -156,39 +156,57 @@ Each `Function` has `Graph` associated with it. Thus, there are as many graphs a
 The description below specifies the interface of the `Graph`.
 
 #### clone
+
 `clone     :: Graph -> Graph`
+
 Clones a graph.
 
 #### force
+
 `force     :: Graph -> Natural -> Graph`
+
 Forces the argument at the given position and returns a new graph.
 
 #### merge
+
 `merge     :: Graph -> Graph -> Graph`
+
 Merges two graphs and returns the new graph.
 
 #### state
+
 `state     :: Graph -> Natural -> State`
+
 Returns the state of the argument at the given position.
 
 #### first
+
 `first     :: Graph -> P(Natural)`
+
 Returns the set of positions corresponding to arguments which were forced first.
 
 #### next
+
 `next      :: Graph -> Natural -> P(Natural)`
+
 Returns the set of positions corresponding to arguments which are forced after the given argument position.
 
 #### always
+
 `always    :: Graph -> P(Natural)`
+
 Returns the set of positions corresponding to arguments which are always evaluated.
 
 #### never
+
 `never     :: Graph -> P(Natural)`
+
 Returns the set of positions corresponding to arguments which are never evaluated.
 
 #### sometimes
+
 `sometimes :: Graph -> P(Natural)`
+
 Returns the set of positions corresponding to arguments which are sometimes evaluated.
 
 ### Environment (Interface)
@@ -196,21 +214,30 @@ Returns the set of positions corresponding to arguments which are sometimes eval
 Each `Function` has an `Environment` associated with it. Thus, there are as many environments as the number of `Function`. However, `Promise` share the environment of the caller or the callee.
 
 #### clone
+
 `clone  :: Environment -> Environment`
+
 Clones an environment.
 
 #### merge
+
 `merge  :: Environment -> Environment -> Environment`
+
 Merges two environment and returns the new environment.
 
 #### add
+
 `add    :: Environment -> Var -> Lab -> Environment`
+
 Adds the given label to the set of bindings of the given variable in the given environment and returns the new environment.
 
 #### remove
+
 `remove :: Environment -> Var -> Environment`
+
 Removes the variable from the environment.
 
 #### get
 `get    :: Environment -> Var -> P(Lab)`
+
 Retrieves all the bindings for the given variable from the environment.
