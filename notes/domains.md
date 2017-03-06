@@ -6,17 +6,23 @@ The abstract domains for strictness analysis are specified below along with the 
 
 1. Promises don't have an environment of their own. They either share the environment of the caller or the callee.
 2. All promises corresponding to the arguments of the same function share the same graph. This is the graph of the callee.
-3. So, we have a new environment and graph for each function. Promises don't require new environments or graphs.
-4. The same environment can be paired with multiple graphs and the same graph can be paired with multiple environments.
-5. To make this work properly, we need a level of indirection for pairing environments and graphs.
-6. A promise can be evaluated only once. Multiple evaluations can make the analysis imprecise. Hence, we need to store information about the state of promise evaluation.
-7. To update the graph, we need to know if the code being evaluated is that of function or promise. If a promise is being evaluated, we need to update that fact in the graph of the corresponding function but if a function is being evaluated, we don't have to update that fact in any graph. So, we need a mapping to distinguish between promise and function labels. 
-8. The analysis is really expected to compute whether a function is strict in a particular argument position or not. So, we need to map each promise to its argument position.
+3. So, we have a unique environment and graph for each function. Promises don't require their own environments or graphs.
+4. The same environment can be paired with multiple graphs and the same graph can be paired with multiple environments. To make this work properly, we need a level of indirection for pairing environments and graphs.
+5. A promise can be evaluated only once. Multiple evaluations can make the analysis imprecise. Hence, we need to store information about the state of promise evaluation. This makes the analysis more precise.
+6. To update the graph, we need to know if the code being evaluated is that of function or promise. If a promise is being evaluated, we need to update that fact in the graph of the corresponding function but if a function is being evaluated, we don't have to update that fact in any graph. So, we need a mapping to distinguish between promise and function labels. 
+7. The analysis is really expected to compute whether a function is strict in a particular argument position or not. So, we need to map each promise to its argument position.
 
 ## Overview
 
-### Syntactic Categories
+### Basic Types
 
+`ℕ` denotes the set of natural numbers.
+
+`ℙ(x)` denotes a set of values of type x (ordering does not matter).
+
+`𝕊(x)` denotes a sequence of values of type x (ordering matters).
+
+### Syntactic Categories
 
 <code>Var</code>
 <code>Lab</code>
@@ -42,19 +48,18 @@ Forced ::= Always
 ```
 
 #### Graph (Interface)
-
-```Graph ::= [Natural ↦ ℙ(Natural)]```
+```Graph ::= ℙ(𝕊(ℕ))```
 
 ```
 clone     :: Graph -> Graph
-force     :: Graph -> Natural -> Graph
+force     :: Graph -> ℕ -> Graph
 merge     :: Graph -> Graph -> Graph
-forced     :: Graph -> Natural -> Forced
-first     :: Graph -> ℙ(Natural)
-next      :: Graph -> Natural -> ℙ(Natural)
-always    :: Graph -> ℙ(Natural)
-never     :: Graph -> ℙ(Natural)
-sometimes :: Graph -> ℙ(Natural)
+forced    :: Graph -> ℕ -> Forced
+first     :: Graph -> ℙ(ℕ)
+next      :: Graph -> ℕ -> ℙ(ℕ)
+always    :: Graph -> ℙ(ℕ)
+never     :: Graph -> ℙ(ℕ)
+sometimes :: Graph -> ℙ(ℕ)
 ```
 
 #### Environment (Interface)
@@ -81,11 +86,11 @@ get    :: Environment -> Var -> ℙ(Lab)
 
 <code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
 
-<code>M<sub>P</sub> ::= [Lab ↦ Natural]</code>
+<code>M<sub>P</sub> ::= [Lab ↦ ℕ]</code>
 
 <code>M<sub>F</sub> ::= [Lab ↦ Forced]</code>
 
-<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>)</code>
+<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
 
 ## Description
 
@@ -143,7 +148,7 @@ Maps each `Lab` to the type of syntactic entity it labels, a `Function` or a `Pr
 
 ### Position Map
 
-<code>M<sub>P</sub> ::= [Lab ↦ Natural]</code>
+<code>M<sub>P</sub> ::= [Lab ↦ ℕ]</code>
 
 Maps each `Lab` which labels a `Promise` to its argument position in the corresponding `Function`.
 
@@ -161,14 +166,15 @@ Maps each `Lab` to the abstract state of the entity it labels, i.e., a tuple of 
 
 ### Abstract State
 
-<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>)</code>
+<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
 
-This is the abstract state of the analysis. This contains both <code>M<sub>E</sub></code> and <code>M<sub>G</sub></code>. At any point in the analysis, a function or promise can either force evaluation of another function or promise or use super assignment, thus modifying environments other than its own. So at any point in the program, the `AS` is specified by all the `Environment` and `Graph`. Whenever there is a fork in the control flow (`if` statements), we need to flow separate copies of `AS` along both paths and merge them at the join point. 
+This is the abstract state of the analysis. This contains <code>M<sub>E</sub></code>, <code>M<sub>G</sub></code> and <code>M<sub>F</sub></code>. At any point in the analysis, a function or promise can either force evaluation of another function or promise or use super assignment, thus modifying environments other than its own. So at any point in the program, the `AS` is specified by all the `Environment` and `Graph` and state of other `Promise`. Whenever there is a fork in the control flow (`if` statements), we need to flow separate copies of `AS` along both paths and merge them at the join point. 
 There is an advantage to formulating `AS` as collection of per-function `Graph` and `Environment`. Cloning can be done lazily and an `Environment` or `Graph` will be actually copied only when it is modified. This makes merging almost constant time even though merging the `AS` seemingly requires merging all the `Environment` and `Graph`.
 
 ### Graph (Interface)
+```Graph ::= ℙ(𝕊(ℕ))```
 
-```Graph ::= [Natural ↦ ℙ(Natural)]```
+A `Graph` contains a sequence of argument positions for each control flow path across a function. The order of positions in the sequence is the order in which the arguments in those positions were forced along that control flow path.
 
 Each `Function` has `Graph` associated with it. Thus, there are as many graphs as the number of `Function`. However, all `Promise` of a function call share the Graph of the callee.
 The description below specifies the interface of the `Graph`.
@@ -181,7 +187,7 @@ Clones a graph.
 
 #### force
 
-`force     :: Graph -> Natural -> Graph`
+`force     :: Graph -> ℕ -> Graph`
 
 Forces the argument at the given position and returns a new graph.
 
@@ -193,37 +199,37 @@ Merges two graphs and returns the new graph.
 
 #### forced
 
-`forced     :: Graph -> Natural -> Forced`
+`forced     :: Graph -> ℕ -> Forced`
 
 Returns the forced state of the argument at the given position.
 
 #### first
 
-`first     :: Graph -> P(Natural)`
+`first     :: Graph -> ℙ(ℕ)`
 
 Returns the set of positions corresponding to arguments which were forced first.
 
 #### next
 
-`next      :: Graph -> Natural -> P(Natural)`
+`next      :: Graph -> ℕ -> ℙ(ℕ)`
 
 Returns the set of positions corresponding to arguments which are forced after the given argument position.
 
 #### always
 
-`always    :: Graph -> P(Natural)`
+`always    :: Graph -> ℙ(ℕ)`
 
 Returns the set of positions corresponding to arguments which are always evaluated.
 
 #### never
 
-`never     :: Graph -> P(Natural)`
+`never     :: Graph -> ℙ(ℕ)`
 
 Returns the set of positions corresponding to arguments which are never evaluated.
 
 #### sometimes
 
-`sometimes :: Graph -> P(Natural)`
+`sometimes :: Graph -> ℙ(ℕ)`
 
 Returns the set of positions corresponding to arguments which are sometimes evaluated.
 
@@ -231,6 +237,7 @@ Returns the set of positions corresponding to arguments which are sometimes eval
 
 ```Environment ::= [Var ↦ ℙ(Lab)]```
 
+An `Environment` maps each `Var` to a set of `Lab`, i.e., we only track bindings to `Function` or `Promise`. As assignment of a variable to any other value can be just ignored (I think, need to test this assumption). 
 Each `Function` has an `Environment` associated with it. Thus, there are as many environments as the number of `Function`. However, `Promise` share the environment of the caller or the callee.
 
 #### clone
@@ -258,6 +265,6 @@ Adds the given label to the set of bindings of the given variable in the given e
 Removes the variable from the environment.
 
 #### get
-`get    :: Environment -> Var -> P(Lab)`
+`get    :: Environment -> Var -> ℙ(Lab)`
 
 Retrieves all the bindings for the given variable from the environment.
