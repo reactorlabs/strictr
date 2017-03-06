@@ -87,7 +87,7 @@ get    :: Environment -> Var -> ℙ(Lab)
 
 <code>AS ::= (M<sub>E</sub>, M<sub>G</sub>)</code>
 
-## Definitions
+## Description
 
 ### Var
 
