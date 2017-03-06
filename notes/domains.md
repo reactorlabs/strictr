@@ -17,13 +17,12 @@ The abstract domains for strictness analysis are specified below along with the 
 
 ### Syntactic Categories
 
-```
-v ∈ Var
-l ∈ Lab
-c ∈ Code
-g ∈ Gid
-e ∈ Eid
-```
+
+<code>Var</code>
+<code>Lab</code>
+<code>Code</code>
+<code>Id<sub>E</sub></code>
+<code>Id<sub>G</sub></code>
 
 ### Data Types
 
@@ -34,49 +33,59 @@ Type ::= Promise
        | Function
 ```
 
-#### State
+#### Forced
 
 ```
-State ::= Always
-        | Never
-        | Sometimes 
+Forced ::= Always
+         | Never
+         | Sometimes 
 ```
 
 #### Graph (Interface)
+
+```Graph ::= [Natural ↦ ℙ(Natural)]```
 
 ```
 clone     :: Graph -> Graph
 force     :: Graph -> Natural -> Graph
 merge     :: Graph -> Graph -> Graph
-state     :: Graph -> Natural -> State
-first     :: Graph -> P(Natural)
-next      :: Graph -> Natural -> P(Natural)
-always    :: Graph -> P(Natural)
-never     :: Graph -> P(Natural)
-sometimes :: Graph -> P(Natural)
+forced     :: Graph -> Natural -> Forced
+first     :: Graph -> ℙ(Natural)
+next      :: Graph -> Natural -> ℙ(Natural)
+always    :: Graph -> ℙ(Natural)
+never     :: Graph -> ℙ(Natural)
+sometimes :: Graph -> ℙ(Natural)
 ```
 
 #### Environment (Interface)
+
+```Environment ::= [Var ↦ ℙ(Lab)]```
 
 ```
 clone  :: Environment -> Environment
 merge  :: Environment -> Environment -> Environment
 add    :: Environment -> Var -> Lab -> Environment
 remove :: Environment -> Var -> Environment
-get    :: Environment -> Var -> P(Lab)
+get    :: Environment -> Var -> ℙ(Lab)
 ```
 
 ### Maps
 
-```
-M_e ::= [Eid ↦ Environment]
-M_g ::= [Gid ↦ Graph]
-M_c ::= [Lab ↦ Code]
-M_t ::= [Lab ↦ Type]
-M_a ::= [Lab ↦ (Eid, Gid)]
-M_p ::= [Lab ↦ Natural]
-M_s ::= [Lab ↦ Bool]
-```
+<code>M<sub>E</sub> ::= [Id<sub>E</sub> ↦ Environment]</code>
+
+<code>M<sub>G</sub> ::= [Id<sub>G</sub> ↦ Graph]</code>
+
+<code>M<sub>C</sub> ::= [Lab ↦ Code]</code>
+
+<code>M<sub>T</sub> ::= [Lab ↦ Type]</code>
+
+<code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
+
+<code>M<sub>P</sub> ::= [Lab ↦ Natural]</code>
+
+<code>M<sub>F</sub> ::= [Lab ↦ Forced]</code>
+
+<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>)</code>
 
 ## Definitions
 
@@ -92,65 +101,67 @@ M_s ::= [Lab ↦ Bool]
 
 `Code` is the set of expressions or body of any function or promise.
 
-### Gid
+<h3>Id<sub>G</sub></h3>
 
-`Gid` is the set of identifiers for uniquely identifying the `Graph`.
+<code>Id<sub>G</sub></code> is the set of identifiers for uniquely identifying the `Graph`.
 
-### Eid
+<h3>Id<sub>E</sub></h3>
 
-`Eid` is the set of identifiers for uniquely identifying the `Environment`.
+<code>Id<sub>E</sub></code> is the set of identifiers for uniquely identifying the `Environment`.
 
 ### Type
 
 `Type` specifies the type of labeled entity, either a `Function` or a `Promise`.
 
-### State
+### Forced
 
-`State` specifies the strictness state of a particular argument position, one of `Always`, `Never` and `Sometimes`.
+`Forced` specifies the strictness state of a particular argument position, one of `Always`, `Never` and `Sometimes`.
 
 ### Environment Map 
 
-`M_e ::= [Eid ↦ Environment]`
+<code>M<sub>E</sub> ::= [Id<sub>E</sub> ↦ Environment]</code>
 
-Maps each `Eid` to a unique `Environment`. `Eid` adds a layer of indirection needed to pair up the same `Graph` with different `Environment`.
+Maps each <code>Id<sub>E</sub></code> to a unique `Environment`. <code>Id<sub>E</sub></code> adds a layer of indirection needed to pair up the same `Graph` with different `Environment`.
 
 ### Graph Map
 
-`M_g ::= [Gid ↦ Graph]`
+<code>M<sub>G</sub> ::= [Id<sub>G</sub> ↦ Graph]</code>
 
-Maps each `Gid` to a unique `Environment`. `Gid` adds a layer of indirection needed to pair up the same `Environment` with different `Graph`.
+Maps each <code>Id<sub>G</sub></code> to a unique `Environment`. <code>Id<sub>G</sub></code> adds a layer of indirection needed to pair up the same `Environment` with different `Graph`.
 
 ### Code Map
 
-`M_c ::= [Lab ↦ Code]`
+<code>M<sub>C</sub> ::= [Lab ↦ Code]</code>
 
 Maps each `Lab` to its unique `Code`.
 
 ### Type Map
 
-`M_t ::= [Lab ↦ Type]`
+<code>M<sub>T</sub> ::= [Lab ↦ Type]</code>
 
 Maps each `Lab` to the type of syntactic entity it labels, a `Function` or a `Promise`.
 
-### Abstract State Map
-
-`M_a ::= [Lab ↦ (Eid, Gid)]`
-
-Maps each `Lab` to its abstract state, i.e., a tuple of `Eid` and `Gid`.
-
 ### Position Map
 
-`M_p ::= [Lab ↦ Natural]`
+<code>M<sub>P</sub> ::= [Lab ↦ Natural]</code>
 
 Maps each `Lab` which labels a `Promise` to its argument position in the corresponding `Function`.
 
 ### Forced Map
 
-`M_s ::= [Lab ↦ Bool]`
+<code>M<sub>F</sub> ::= [Lab ↦ Forced]</code>
 
-Maps each `Lab` which labels a `Promise` to its forced state, `True` or `False`.
+Maps each `Lab` which labels a `Promise` to its forced state, `Always`, `Never` or `Sometimes`.
+
+### Abstract State Map
+
+<code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
+
+Maps each `Lab` to the abstract state of the entity it labels, i.e., a tuple of <code>Id<sub>E</sub></code> and <code>Id<sub>G</sub></code>.
 
 ### Graph (Interface)
+
+```Graph ::= [Natural ↦ ℙ(Natural)]```
 
 Each `Function` has `Graph` associated with it. Thus, there are as many graphs as the number of `Function`. However, all `Promise` of a function call share the Graph of the callee.
 The description below specifies the interface of the `Graph`.
@@ -173,11 +184,11 @@ Forces the argument at the given position and returns a new graph.
 
 Merges two graphs and returns the new graph.
 
-#### state
+#### forced
 
-`state     :: Graph -> Natural -> State`
+`forced     :: Graph -> Natural -> Forced`
 
-Returns the state of the argument at the given position.
+Returns the forced state of the argument at the given position.
 
 #### first
 
@@ -210,6 +221,8 @@ Returns the set of positions corresponding to arguments which are never evaluate
 Returns the set of positions corresponding to arguments which are sometimes evaluated.
 
 ### Environment (Interface)
+
+```Environment ::= [Var ↦ ℙ(Lab)]```
 
 Each `Function` has an `Environment` associated with it. Thus, there are as many environments as the number of `Function`. However, `Promise` share the environment of the caller or the callee.
 
