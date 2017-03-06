@@ -5,7 +5,7 @@ The abstract domains for strictness analysis are specified below along with the 
 ## Observations
 
 1. Promises don't have an environment of their own. They either share the environment of the caller or the callee.
-2. All promises corresponding to the arguments of the same functions share the same graph. This is the graph of the callee.
+2. All promises corresponding to the arguments of the same function share the same graph. This is the graph of the callee.
 3. So, we have a new environment and graph for each function. Promises don't require new environments or graphs.
 4. The same environment can be paired with multiple graphs and the same graph can be paired with multiple environments.
 5. To make this work properly, we need a level of indirection for pairing environments and graphs.
@@ -158,6 +158,13 @@ Maps each `Lab` which labels a `Promise` to its forced state, `Always`, `Never` 
 <code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
 
 Maps each `Lab` to the abstract state of the entity it labels, i.e., a tuple of <code>Id<sub>E</sub></code> and <code>Id<sub>G</sub></code>.
+
+### Abstract State
+
+<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>)</code>
+
+This is the abstract state of the analysis. This contains both <code>M<sub>E</sub></code> and <code>M<sub>G</sub></code>. At any point in the analysis, a function or promise can either force evaluation of another function or promise or use super assignment, thus modifying environments other than its own. So at any point in the program, the `AS` is specified by all the `Environment` and `Graph`. Whenever there is a fork in the control flow (`if` statements), we need to flow separate copies of `AS` along both paths and merge them at the join point. 
+There is an advantage to formulating `AS` as collection of per-function `Graph` and `Environment`. Cloning can be done lazily and an `Environment` or `Graph` will be actually copied only when it is modified. This makes merging almost constant time even though merging the `AS` seemingly requires merging all the `Environment` and `Graph`.
 
 ### Graph (Interface)
 
