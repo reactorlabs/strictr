@@ -76,13 +76,11 @@ sometimes :: Graph -> ℙ(ℕ)
 
 ##### Interface
 
-```
-clone  :: Environment -> Environment
-merge  :: Environment -> Environment -> Environment
-add    :: Environment -> Var -> Lab -> Environment
-remove :: Environment -> Var -> Environment
-get    :: Environment -> Var -> ℙ(Lab)
-```
+<code> clone  :: Environment -> Environment</code><br />
+<code>merge  :: Environment -> Environment -> Environment</code><br />
+<code>add    :: Environment -> Var -> (L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>) -> Environment</code><br />
+<code>remove :: Environment -> Var -> Environment</code><br />
+<code>get    :: Environment -> Var -> ℙ(L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>)</code><br />
 
 ### Maps
 
@@ -270,7 +268,7 @@ Merges two environment and returns the new environment.
 
 #### add
 
-`add    :: Environment -> Var -> Lab -> Environment`
+<code>add :: Environment -> Var -> (L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>) -> Environment</code>
 
 Adds the given label to the set of bindings of the given variable in the given environment and returns the new environment.
 
@@ -281,6 +279,6 @@ Adds the given label to the set of bindings of the given variable in the given e
 Removes the variable from the environment.
 
 #### get
-`get    :: Environment -> Var -> ℙ(Lab)`
+<code>get    :: Environment -> Var -> ℙ(L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>)</code>
 
 Retrieves all the bindings for the given variable from the environment.
