@@ -25,30 +25,36 @@ The abstract domains for strictness analysis are specified below along with the 
 ### Syntactic Categories
 
 <code>Var</code>
-<code>Lab</code>
+<code>L</code>
+<code>L<sub>P</sub></code>
+<code>L<sub>F</sub></code>
+<code>L<sub>⊥</sub></code>
 <code>Code</code>
 <code>Id<sub>E</sub></code>
 <code>Id<sub>G</sub></code>
 
 ### Data Types
 
-#### Type
-
-```
-Type ::= Promise
-       | Function
-```
-
 #### Forced
 
 ```
-Forced ::= Always
-         | Never
-         | Sometimes 
+Forced ≝ Sometimes
+            |
+            |
+            |
+          Always
+            |
+            |
+            |
+          Never
 ```
 
-#### Graph (Interface)
-```Graph ::= ℙ(𝕊(ℕ))```
+#### Graph
+
+##### Definition
+```Graph ≝ ℙ(𝕊(ℕ))```
+
+##### Interface
 
 ```
 clone     :: Graph -> Graph
@@ -62,9 +68,13 @@ never     :: Graph -> ℙ(ℕ)
 sometimes :: Graph -> ℙ(ℕ)
 ```
 
-#### Environment (Interface)
+#### Environment
 
-```Environment ::= [Var ↦ ℙ(Lab)]```
+##### Definition
+
+<code>Environment ≝ [Var ↦ ℙ(L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>)]</code>
+
+##### Interface
 
 ```
 clone  :: Environment -> Environment
@@ -76,21 +86,20 @@ get    :: Environment -> Var -> ℙ(Lab)
 
 ### Maps
 
-<code>M<sub>E</sub> ::= [Id<sub>E</sub> ↦ Environment]</code>
+<code>M<sub>E</sub> ≝ [Id<sub>E</sub> ↦ Environment]</code>
 
-<code>M<sub>G</sub> ::= [Id<sub>G</sub> ↦ Graph]</code>
+<code>M<sub>G</sub> ≝ [Id<sub>G</sub> ↦ Graph]</code>
 
-<code>M<sub>C</sub> ::= [Lab ↦ Code]</code>
+<code>M<sub>C</sub> ≝ [(L<sub>P</sub> ∪ L<sub>F</sub>) ↦ Code]</code>
 
-<code>M<sub>T</sub> ::= [Lab ↦ Type]</code>
+<code>M<sub>P</sub> ≝ [L<sub>P</sub> ↦ ℕ]</code>
 
-<code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
+<code>M<sub>F</sub> ≝ [L<sub>P</sub> ↦ Forced]</code>
 
-<code>M<sub>P</sub> ::= [Lab ↦ ℕ]</code>
+<code>M<sub>H</sub> ≝ [(L<sub>P</sub> ∪ L<sub>F</sub>) ↦ Id<sub>E</sub> × Id<sub>G</sub>]</code>
 
-<code>M<sub>F</sub> ::= [Lab ↦ Forced]</code>
+<code>S<sub>A</sub> ≝ (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
 
-<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
 
 ## Description
 
@@ -98,9 +107,17 @@ get    :: Environment -> Var -> ℙ(Lab)
 
 `Var` is the set of variables used in the program. Variables point to functions or promises or values we don't care about.
 
-### Lab
+<h3>L<sub>P</sub></h3>
 
-`Lab` is the set of labels. There is a unique label for each function and promise. 
+<code>L<sub>P</sub></code> denotes the set of labels for uniquely labeling promises.
+
+<h3>L<sub>F</sub></h3>
+
+<code>L<sub>F</sub></code> denotes the set of labels for uniquely labeling functions.
+
+<h3>L<sub>⊥</sub></h3>
+
+<code>L<sub>⊥</sub></code> is a singleton set of labels for labeling non-function or non-promise values such as numbers, strings, matrices, lists, etc.
 
 ### Code
 
@@ -114,13 +131,9 @@ get    :: Environment -> Var -> ℙ(Lab)
 
 <code>Id<sub>E</sub></code> is the set of identifiers for uniquely identifying the `Environment`.
 
-### Type
-
-`Type` specifies the type of labeled entity, either a `Function` or a `Promise`.
-
 ### Forced
 
-`Forced` specifies the strictness state of a particular argument position, one of `Always`, `Never` and `Sometimes`.
+`Forced` is a lattice of three elements (`Always`, `Never` and `Sometimes`), corresponding to the strictness state of a particular argument position.
 
 ### Environment Map 
 
@@ -132,51 +145,50 @@ Maps each <code>Id<sub>E</sub></code> to a unique `Environment`. <code>Id<sub>E<
 
 <code>M<sub>G</sub> ::= [Id<sub>G</sub> ↦ Graph]</code>
 
-Maps each <code>Id<sub>G</sub></code> to a unique `Environment`. <code>Id<sub>G</sub></code> adds a layer of indirection needed to pair up the same `Environment` with different `Graph`.
+Maps each <code>Id<sub>G</sub></code> to a unique `Graph`. <code>Id<sub>G</sub></code> adds a layer of indirection needed to pair up the same `Environment` with different `Graph`.
 
 ### Code Map
 
-<code>M<sub>C</sub> ::= [Lab ↦ Code]</code>
+<code>M<sub>C</sub> ≝ [(L<sub>P</sub> ∪ L<sub>F</sub>) ↦ Code]</code>
 
-Maps each `Lab` to its unique `Code`.
-
-### Type Map
-
-<code>M<sub>T</sub> ::= [Lab ↦ Type]</code>
-
-Maps each `Lab` to the type of syntactic entity it labels, a `Function` or a `Promise`.
+Maps each <code>L<sub>C</sub></code> to the `Code` of the entity (function or promise) that it labels.
 
 ### Position Map
 
-<code>M<sub>P</sub> ::= [Lab ↦ ℕ]</code>
+<code>M<sub>P</sub> ≝ [L<sub>P</sub> ↦ ℕ]</code>
 
-Maps each `Lab` which labels a `Promise` to its argument position in the corresponding `Function`.
+Maps each L<sub>P</sub> which labels a `Promise` to its argument position in the corresponding `Function`.
 
 ### Forced Map
 
-<code>M<sub>F</sub> ::= [Lab ↦ Forced]</code>
+<code>M<sub>F</sub> ≝ [L<sub>P</sub> ↦ Forced]</code>
 
-Maps each `Lab` which labels a `Promise` to its forced state, `Always`, `Never` or `Sometimes`.
+Maps each L<sub>P</sub> which labels a `Promise` to its forced state, `Always`, `Never` or `Sometimes`. An abstract interpreter can use this to avoid re-evaluating a `Promise`, thus increasing precision.
 
-### Abstract State Map
+### Heap Map
 
-<code>M<sub>S</sub> ::= [Lab ↦ (Id<sub>E</sub>, Id<sub>G</sub>)]</code>
+<code>M<sub>H</sub> ≝ [(L<sub>P</sub> ∪ L<sub>F</sub>) ↦ Id<sub>E</sub> × Id<sub>G</sub>]</code>
 
-Maps each `Lab` to the abstract state of the entity it labels, i.e., a tuple of <code>Id<sub>E</sub></code> and <code>Id<sub>G</sub></code>.
+Maps each label of a function or a promise to the identifiers of its `Environment` and `Graph`.
 
 ### Abstract State
 
-<code>AS ::= (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
+<code>S<sub>A</sub> ≝ (M<sub>E</sub>, M<sub>G</sub>, M<sub>F</sub>)</code>
 
-This is the abstract state of the analysis. This contains <code>M<sub>E</sub></code>, <code>M<sub>G</sub></code> and <code>M<sub>F</sub></code>. At any point in the analysis, a function or promise can either force evaluation of another function or promise or use super assignment, thus modifying environments other than its own. So at any point in the program, the `AS` is specified by all the `Environment` and `Graph` and state of other `Promise`. Whenever there is a fork in the control flow (`if` statements), we need to flow separate copies of `AS` along both paths and merge them at the join point. 
-There is an advantage to formulating `AS` as collection of per-function `Graph` and `Environment`. Cloning can be done lazily and an `Environment` or `Graph` will be actually copied only when it is modified. This makes merging almost constant time even though merging the `AS` seemingly requires merging all the `Environment` and `Graph`.
+This is the abstract state of the analysis. This contains <code>M<sub>E</sub></code>, <code>M<sub>G</sub></code> and <code>M<sub>F</sub></code>. At any point in the analysis, a function or promise can either force evaluation of another function or promise or use super assignment, thus modifying environments other than its own. So at any point in the program, the <code>S<sub>A</sub></code> is specified by all the `Environment` and `Graph` and state of other `Promise`. Whenever there is a fork in the control flow (`if` statements), we need to flow separate copies of `AS` along both paths and merge them at the join point. 
+There is an advantage to formulating <code>S<sub>A</sub></code> as collection of per-function `Graph` and `Environment`. Cloning can be done lazily and an `Environment` or `Graph` will be actually copied only when it is modified. This makes merging almost constant time even though merging the <code>S<sub>A</sub></code> seemingly requires merging all the `Environment` and `Graph`.
 
-### Graph (Interface)
+### Graph
+
+#### Definition
 ```Graph ::= ℙ(𝕊(ℕ))```
 
 A `Graph` contains a sequence of argument positions for each control flow path across a function. The order of positions in the sequence is the order in which the arguments in those positions were forced along that control flow path.
 
-Each `Function` has `Graph` associated with it. Thus, there are as many graphs as the number of `Function`. However, all `Promise` of a function call share the Graph of the callee.
+Each `Function` has `Graph` associated with it. Thus, there are as many graphs as the number of `Function`. However, all `Promise` of a function call share the `Graph` of the callee.
+
+#### Interface
+
 The description below specifies the interface of the `Graph`.
 
 #### clone
@@ -233,12 +245,16 @@ Returns the set of positions corresponding to arguments which are never evaluate
 
 Returns the set of positions corresponding to arguments which are sometimes evaluated.
 
-### Environment (Interface)
+### Environment
 
-```Environment ::= [Var ↦ ℙ(Lab)]```
+#### Definition
 
-An `Environment` maps each `Var` to a set of `Lab`, i.e., we only track bindings to `Function` or `Promise`. As assignment of a variable to any other value can be just ignored (I think, need to test this assumption). 
+<code>Environment ≝ [Var ↦ ℙ(L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub>)]</code>
+
+An `Environment` maps each `Var` to <code>L<sub>P</sub> ∪ L<sub>F</sub> ∪ L<sub>⊥</sub></code>, i.e., to labels of entities the variable could point to at runtime. All non-function and non-promise values have the same label as we don't need to distinguish between them.
 Each `Function` has an `Environment` associated with it. Thus, there are as many environments as the number of `Function`. However, `Promise` share the environment of the caller or the callee.
+
+#### Interface
 
 #### clone
 
