@@ -2,12 +2,12 @@
 
 all: promises-are-meant-to-be-broken.pdf
 
-promises-are-meant-to-be-broken.pdf: promises-are-meant-to-be-broken.tex
+promises-are-meant-to-be-broken.pdf: promises-are-meant-to-be-broken.tex references.bib
 	latexmk -pdf $<
 
 clean:
 	latexmk -c
-	rm -rf *.synctex.gz
+	rm -rf *.synctex.gz *.bbl 
 	rm promises-are-meant-to-be-broken.pdf
 
 clean-all:

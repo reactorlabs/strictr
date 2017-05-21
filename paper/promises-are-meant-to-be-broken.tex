@@ -1,7 +1,7 @@
 %% For double-blind review submission
 %% \documentclass[sigplan,10pt,review, anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
-%\documentclass[sigplan,10pt,review]{acmart}\settopmatter{printfolios=true}
+%% \documentclass[sigplan,10pt,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
 \documentclass[sigplan,10pt]{acmart}\settopmatter{}
 
@@ -14,6 +14,15 @@
                         %% http://ctan.org/pkg/booktabs
 \usepackage{subcaption} %% For complex figures with subfigures/subcaptions
                         %% http://ctan.org/pkg/subcaption
+%% For drawing figures
+\usepackage{tikz}
+\usetikzlibrary{fit}
+
+%% For typesetting code snippets
+\usepackage{listings}
+
+%% For defining syntax coloring theme
+\usepackage{color}
 
 \makeatletter\if@ACM@journal\makeatother
 %% Journal information (used by PACMPL format)
@@ -64,9 +73,35 @@
                             %% e.g., \cite{Baker12,Baker14,Baker16}
                             %% rendered as [2,3,4] rather than [2-4].
 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
 
-\begin{document}
+\lstdefinestyle{snippet-theme}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    % basicstyle=\,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=2pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4
+  }
+  
+  \lstset{style=snippet-theme}
+
+  
+  \begin{document}
 
 %% Title information
 %% [Short Title] is optional;
@@ -157,7 +192,8 @@
 %% Note: \begin{abstract}...\end{abstract} environment must come
 %% before \maketitle command
 \begin{abstract}
-R evaluates function arguments lazily. Arguments are stored in ``promises''
+R evaluates function arguments lazily. When a function is called the formal
+parameters are bound to ``promises'' Arguments are stored in ``promises''
 which are ``forced'' when the corresponding parameter is used in an evaluation context. A
 promise also contains a reference to the environment in which the argument has
 to be evaluated and a slot to cache the result of evaluation.  This mechanism
@@ -211,8 +247,7 @@ our static analysis from dynamic runs on a number of widely used R libraries.
 %% comma separated list
 %% \keywords is optional
 \keywords{R, Strictness analysis, Control-Flow analysis,
-  Static analysis, Program analysis, Performance optimization} 
-
+  Static analysis, Program analysis, Performance optimization}
 
 %% \maketitle
 %% Note: \maketitle command must come after title commands, author
@@ -220,27 +255,79 @@ our static analysis from dynamic runs on a number of widely used R libraries.
 %% environment and commands, and keywords command.
 \maketitle
 
-
 \section{Introduction}
 
 Text of paper \ldots
 
-\section{Motivating Example}
+\section{Overview}
+
+\subsection{Promise}
+
+A promise object has three slots; value, expression and environment. When a
+function is called, the actual arguments are wrapped inside promises. The
+promise also contains a reference to the 
+
+
+\begin{figure}
+\begin{tikzpicture}[font=\sffamily\small]
+  \begin{scope}%[blend group = soft light]
+    % \draw[help lines] (-4,1) grid (4,3);
+
+    % \draw[fill = pink, fill opacity = 0.3,
+    % draw = pink
+    % , draw opacity = 1.0, very thick]
+    % (-4, 1) rectangle (4, 3)
+    % node[midway, pink, font=\bf] {Value};
+
+    % \draw[fill = red, fill opacity = 0.3,
+    % draw = red, draw opacity = 1.0, very thick]
+    % (-3.5, 1.5) rectangle (-1.5, 2.5)
+    % node[midway, red, font=\bf] {Value};
+
+    % \draw [fill = {rgb:red,166;green,206;blue,227}, fill opacity = 0.5,
+    % draw = {rgb:red,166;green,206;blue,227}, draw opacity = 1.0, very thick]
+    % (-1.0, 1.5) rectangle (1.0, 2.5) node[midway, blue, font=\bf] {Expression};
+
+    % \draw [fill = green, fill opacity = 0.3,
+    % draw = green, draw opacity = 1.0, very thick]
+    % (1.5, 1.5) rectangle (3.5, 2.5) node[midway, green, font=\bf] {Expression};
+    
+    % \draw [fill = red!10, ultra thick, red!60] (-1.0, -1) rectangle ( 1.0, 1);
+    % \draw [fill = red!10, ultra thick, red!60] ( 1.5, -1) rectangle ( 3.5, 1);
+    \draw[very thick](-4.2, 0.0) rectangle ( 4.2, 2.0); % node[anchor=north, font=\bf] {Promise};
+    \draw[very thick](-3.9, 0.5) rectangle (-1.5, 1.5) node[midway, font=\bf] {Value};
+    \draw[very thick](-1.2, 0.5) rectangle ( 1.2, 1.5) node[midway, font=\bf] {Expression};
+    \draw[very thick]( 1.5, 0.5) rectangle ( 3.9, 1.5) node[midway, font=\bf] {Environment};
+    
+  \end{scope}
+\end{tikzpicture}
+\caption{Structure of a promise.} %\label{fig:Structure of a promise}
+\end{figure}
 
 \subsection{Background on R/Strictness}
 
+
+
 \subsection{Example/IR representation}
 
+\lstinputlisting[language=R]{side-effect.R}
+% \begin{lstlisting}[language=R]
+% \end{lstlisting}
 % TODO - Informal discussion of analysis
-
 \section{Algorithm}
 
 \section{Implementation}
-
 % TODO - Discuss implementation and other pragmatic issues.
 
-\section{Experiments}
-
+\section{Experimental Results}
+\begin{itemize}
+\item Percentage of promises evaluated in the first arguments.
+\item Percentage of promises with side effects.
+\item Percentage of promises never evaluated.
+\item Percentage of promises escaping to other functions and being evaluated.
+\item Promises which are evaluated in different order in different tests.
+\item Compare this with the result of strictness analysis.
+\end{itemize}
 % TODO - Discuss research problems, experimental setup, experiments and draw
 % conclusion on these experiments.
 
@@ -267,11 +354,13 @@ Text of paper \ldots
 
 
 %% Bibliography
-%\bibliography{bibfile}
+\bibliography{references}
 
 
 %% Appendix
 \appendix
+
+
 \section{Appendix}
 
 Text of appendix \ldots
